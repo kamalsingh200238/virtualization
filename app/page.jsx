@@ -1,57 +1,71 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
+  const [country, setCountry] = useState([]);
+  // return data;
+
+  useEffect(() => {
+    const getData = async () => {
+      const resp = await fetch("https://restcountries.com/v3.1/all");
+      const data = await resp.json();
+      setCountry(data);
+    };
+    getData();
+  }, []);
+  console.log(country);
+  // The scrollable element for your list
+  const parentRef = useRef();
+
+  // The virtualizer
+  const rowVirtualizer = useVirtualizer({
+    count: country.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 35,
+  });
+
   return (
-    <div className={styles.container}>
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js 13!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://beta.nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js 13</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Explore the Next.js 13 playground.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates/next.js/app-directory?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>Deploy your Next.js site to a public URL with Vercel.</p>
-          </a>
+    <>
+      {/* The scrollable element for your list */}
+      <div
+        ref={parentRef}
+        style={{
+          height: `100vh`,
+          overflow: "auto", // Make it scroll!
+        }}
+      >
+        <div>
+          <p>this is experimental</p>
+          <input type="text" placeholder="type in this field" />
         </div>
-      </main>
 
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* The large inner element to hold all of the items */}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative",
+          }}
         >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
-    </div>
-  )
+          {/* Only the visible items in the virtualizer, manually positioned to be in view */}
+          {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+            <div
+              key={virtualItem.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              {country[virtualItem.index].name.common}
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
 }
